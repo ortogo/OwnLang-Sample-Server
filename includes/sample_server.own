@@ -1,0 +1,115 @@
+use ["date", "files", "java", "std"]
+
+ServerSocket = newClass("java.net.ServerSocket")
+Socket = newClass("java.net.Socket")
+Scanner = newClass("java.util.Scanner")
+PrintWriter = newClass("java.io.PrintWriter")
+OutputStreamWriter = newClass("java.io.OutputStreamWriter")
+BufferedReader = newClass("java.io.BufferedReader")
+InputStreamReader = newClass("java.io.InputStreamReader")
+StringTokenizer = newClass("java.util.StringTokenizer")
+
+WEB_ROOT = "./web/"
+HTML501 = "501.html"
+HTML404 = "404.html"
+HTMLINDEX = "index.html"
+
+class SampleServer {
+
+    def SampleServer(port) {
+        this.port = port
+        this.isWaiting = true
+    }
+
+    def run() {
+        this.serverSocket = new ServerSocket(this.port)
+        println "Server started on port " + this.port + ". Waiting connections..."
+
+        while this.isWaiting {
+            this.processQuerry()
+        }
+    }
+
+    def stop() {
+        this.isWaiting = false  
+    }
+
+    def processQuerry() {
+        connectionSocket = this.serverSocket.accept()
+        in = connectionSocket.getInputStream()
+        out = connectionSocket.getOutputStream()
+        scanner = new Scanner(in, "UTF-8")
+
+        this.writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"))
+        reader = new BufferedReader(new InputStreamReader(in))
+
+        rawQuery = reader.readLine()
+        tokenizer = new StringTokenizer(rawQuery)
+        method = tokenizer.nextToken().toUpperCase()
+        println "Method " + method
+        path = tokenizer.nextToken().toLowerCase()
+        println "Path " + path
+
+        if (method != "GET" && method != "HEAD") {
+            this.respond501()
+        } else {
+            if (substring(path, length(path)-1) == "/") {
+                path += HTMLINDEX
+            }
+
+            if !exists(WEB_ROOT+path) {
+                this.respond404(path)
+            } else {
+                this.respond200(path)
+            }
+        }
+        this.writer.flush()
+    }
+
+    def respond501() {
+        html501 = readText(fopen(WEB_ROOT + HTML501, "r"))
+        answer = new Answer(501, "Not implemented yet", "text/html", length(html501), html501)
+        this.writer.`print`(answer.toString())
+    }
+
+    def respond404(path) {
+        html404 = readText(fopen(WEB_ROOT + HTML404, "r"))
+        html404 = replace(html404, "{{path}}", path)
+        answer = new Answer(404, "File Not Found", "text/html", length(html404), html404)
+        this.writer.`print`(answer.toString())
+    }
+
+    def respond200(path) {
+        html = readText(fopen(WEB_ROOT + path, "r"))
+        answer = new Answer(200, "OK", "text/html", length(html), html)
+        this.writer.`print`(answer.toString())
+    }
+
+}
+
+class Answer {
+
+    def Answer(statusCode, statusMessage, contentType, contentLength, fileData) {
+        this.statusCode = statusCode
+        this.statusMessage = statusMessage
+        this.contentType = contentType
+        this.contentLength = contentLength
+        this.fileData = fileData
+    }
+
+    def toString() {
+        return sprintf(
+            "HTTP/1.1 %d %s\n" +
+            "Server: OwnLang Server\n" +
+            "Date: %s\n" +
+            "Content-type: %s\n" +
+            "Content-Length: %d\n\n"+
+            "%s",
+            this.statusCode, this.statusMessage,
+            formatDate(newDate(), newFormat()),
+            this.contentType,
+            this.contentLength,
+            this.fileData
+        )
+    }
+}

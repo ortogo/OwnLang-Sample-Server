@@ -1,0 +1,6 @@
+use ["std"]
+
+include("includes/sample_server.own")
+
+server = new SampleServer(9991)
+server.run()
