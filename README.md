@@ -5,6 +5,8 @@ This project demonstrated how to create Http server on OwnLang. Its small implem
 ## How its work
 
 Script using java.net package
+Look
+![Demo animation](https://raw.githubusercontent.com/ortogo/OwnLang-Sample-Server/master/media/demo.gif)
 
 ## Running script
 
